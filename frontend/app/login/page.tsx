@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -11,24 +11,38 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { signIn, signInWithOAuth } = useAuth();
+    const { signIn, signInWithOAuth, user, loading } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/dashboard');
+        }
+    }, [user, loading, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
 
-        const { error: authError } = await signIn(email, password);
+        try {
+            const { error: authError } = await signIn(email, password);
 
-        if (authError) {
-            setError(authError.message);
+            if (authError) {
+                setError(authError.message);
+                setIsLoading(false);
+            } else {
+                // Success: wait for auth state change, which will trigger redirect
+                // Don't reset loading here - let the redirect happen
+                router.push('/dashboard');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred');
             setIsLoading(false);
-        } else {
-            router.push('/dashboard');
         }
     };
 

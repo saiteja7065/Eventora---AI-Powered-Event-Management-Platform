@@ -1,86 +1,31 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
-        },
-    });
+    const { supabaseResponse, user } = await updateSession(request);
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value;
-                },
-                set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    });
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    });
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    });
-                },
-                remove(name: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    });
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    });
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    });
-                },
-            },
-        }
-    );
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    // Protected routes - require authentication
-    const protectedPaths = ['/dashboard', '/events/create', '/profile', '/tickets'];
-    const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path));
-
-    if (isProtectedPath && !user) {
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
+    const { pathname } = request.nextUrl;
 
     // Redirect authenticated users away from auth pages
-    const authPaths = ['/login', '/register'];
-    const isAuthPath = authPaths.some(path => request.nextUrl.pathname.startsWith(path));
-
-    if (isAuthPath && user) {
+    if (user && (pathname === '/login' || pathname === '/register')) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    return response;
+    // Redirect unauthenticated users from protected routes
+    const protectedRoutes = ['/dashboard', '/events/create', '/events', '/profile', '/tickets'];
+    if (!user && protectedRoutes.some(route => pathname.startsWith(route))) {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    return supabaseResponse;
 }
 
 export const config = {
     matcher: [
         '/dashboard/:path*',
         '/events/create/:path*',
+        '/events/:path*',
         '/profile/:path*',
         '/tickets/:path*',
         '/login',

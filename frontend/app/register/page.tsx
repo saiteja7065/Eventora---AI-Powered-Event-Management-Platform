@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { signUp, signInWithOAuth } = useAuth();
+    const { signUp, signInWithOAuth, user, loading } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -20,6 +20,13 @@ export default function RegisterPage() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/dashboard');
+        }
+    }, [user, loading, router]);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,15 +44,19 @@ export default function RegisterPage() {
 
         setIsLoading(true);
 
-        const { error: authError } = await signUp(formData.email, formData.password, formData.name);
+        try {
+            const { error: authError } = await signUp(formData.email, formData.password, formData.name);
 
-        if (authError) {
-            setError(authError.message);
+            if (authError) {
+                setError(authError.message);
+                setIsLoading(false);
+            } else {
+                // Redirect to dashboard instead of login - user is now authenticated
+                router.push('/dashboard');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred');
             setIsLoading(false);
-        } else {
-            // Show success message
-            alert('Account created! Please check your email to verify your account.');
-            router.push('/login');
         }
     };
 

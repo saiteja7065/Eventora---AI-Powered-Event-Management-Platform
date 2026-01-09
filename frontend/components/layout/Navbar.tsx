@@ -58,12 +58,16 @@ export default function Navbar() {
 
                     {/* Desktop CTA */}
                     <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
-                        <Button variant="ghost" size="default">
-                            Sign In
-                        </Button>
-                        <Button variant="gradient" size="default">
-                            Get Started
-                        </Button>
+                        <Link href="/login">
+                            <Button variant="ghost" size="default">
+                                Sign In
+                            </Button>
+                        </Link>
+                        <Link href="/register">
+                            <Button variant="gradient" size="default">
+                                Get Started
+                            </Button>
+                        </Link>
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -99,12 +103,16 @@ export default function Navbar() {
                                 </a>
                             ))}
                             <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
-                                <Button variant="ghost" size="default" className="w-full">
-                                    Sign In
-                                </Button>
-                                <Button variant="gradient" size="default" className="w-full">
-                                    Get Started
-                                </Button>
+                                <Link href="/login" className="w-full">
+                                    <Button variant="ghost" size="default" className="w-full">
+                                        Sign In
+                                    </Button>
+                                </Link>
+                                <Link href="/register" className="w-full">
+                                    <Button variant="gradient" size="default" className="w-full">
+                                        Get Started
+                                    </Button>
+                                </Link>
                             </div>
                         </div>
                     </motion.div>
