@@ -9,6 +9,43 @@ const prisma = new PrismaClient();
  */
 
 /**
+ * POST /api/events/upload-image
+ * Upload event image
+ */
+export async function uploadEventImage(req: Request, res: Response) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No file uploaded'
+            });
+        }
+
+        // Construct the URL for the uploaded image
+        const imageUrl = `/uploads/events/${req.file.filename}`;
+
+        console.log(`✅ Image uploaded: ${req.file.filename}`);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                url: imageUrl,
+                filename: req.file.filename,
+                size: req.file.size,
+                mimetype: req.file.mimetype
+            }
+        });
+
+    } catch (error: any) {
+        console.error('❌ Error uploading image:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to upload image'
+        });
+    }
+}
+
+/**
  * POST /api/events
  * Create a new event
  */

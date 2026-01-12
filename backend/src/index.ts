@@ -24,6 +24,15 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' })); // Increased for AI-generated images
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve uploaded files statically
+import fs from 'fs';
+const uploadsDir = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('📁 Created uploads directory');
+}
+app.use('/uploads', express.static(uploadsDir));
+
 // Health check route
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'Eventora API is running' });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+    uploadEventImage,
     createEvent,
     getEvents,
     getEventById,
@@ -7,6 +8,7 @@ import {
     deleteEvent
 } from '../controllers/events.controller';
 import { authenticateUser, optionalAuth } from '../middleware/auth.middleware';
+import { uploadEventImage as uploadMiddleware } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -20,6 +22,9 @@ router.get('/', optionalAuth, getEvents);
 
 // GET /api/events/:id - Get event by ID (public)
 router.get('/:id', getEventById);
+
+// POST /api/events/upload-image - Upload event image (requires auth)
+router.post('/upload-image', authenticateUser, uploadMiddleware.single('image'), uploadEventImage);
 
 // POST /api/events - Create event (requires auth)
 router.post('/', authenticateUser, createEvent);

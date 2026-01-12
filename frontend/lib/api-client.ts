@@ -25,6 +25,11 @@ export interface GeneratedEventResponse {
         estimatedDuration?: number;
         suggestedCapacity?: number;
         keywords: string[];
+        aiGeneratedBanner?: {
+            imageData: string; // base64 encoded image
+            prompt: string;
+            source: 'huggingface-sdxl';
+        };
         coverImages: Array<{
             id: string;
             url: string;
@@ -45,7 +50,7 @@ export interface CreateEventRequest {
         url: string;
         alt: string;
         photographer?: string;
-        source: 'unsplash' | 'upload';
+        source: 'unsplash' | 'upload' | 'huggingface-sdxl';
     };
     locationType: 'physical' | 'virtual' | 'hybrid';
     address?: string;
@@ -58,6 +63,47 @@ export interface CreateEventRequest {
     timezone?: string;
     capacity?: number;
     ticketPrice?: number;
+}
+
+/**
+ * Upload event image
+ */
+export async function uploadEventImage(file: File): Promise<{ success: boolean; data?: { url: string }; error?: string }> {
+    try {
+        const token = await getAuthToken();
+
+        if (!token) {
+            throw new Error('You must be logged in to upload images');
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch(`${API_URL}/api/events/upload-image`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to upload image');
+        }
+
+        return {
+            success: true,
+            data: { url: `${API_URL}${data.data.url}` }
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to upload image. Please try again.',
+        };
+    }
 }
 
 /**
