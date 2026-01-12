@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Sparkles, Plus, Calendar, Users, BarChart3, LogOut } from 'lucide-react';
+import { Sparkles, Plus, Calendar, Users, BarChart3, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -84,13 +84,15 @@ export default function DashboardPage() {
                                 </Card>
                             </Link>
 
-                            <Card variant="glass" className="p-6 cursor-pointer hover:scale-105 transition-transform group opacity-50">
-                                <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center mb-4">
-                                    <Calendar className="w-6 h-6 text-white" />
-                                </div>
-                                <h3 className="text-lg font-semibold mb-2">My Events</h3>
-                                <p className="text-sm text-text-secondary">Coming soon...</p>
-                            </Card>
+                            <Link href="/events/discover">
+                                <Card variant="glass" className="p-6 cursor-pointer hover:scale-105 transition-transform group">
+                                    <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <Search className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">Discover Events</h3>
+                                    <p className="text-sm text-text-secondary">Browse and search all events</p>
+                                </Card>
+                            </Link>
 
                             <Card variant="glass" className="p-6 cursor-pointer hover:scale-105 transition-transform group opacity-50">
                                 <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center mb-4">

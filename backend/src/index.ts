@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import aiRoutes from './routes/ai.routes';
 import eventsRoutes from './routes/events.routes';
+import userPreferencesRoutes from './routes/userPreferences.routes';
 
 // ES module alternative to __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/ai', aiRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/user', userPreferencesRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

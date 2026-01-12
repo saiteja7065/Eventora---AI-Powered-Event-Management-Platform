@@ -15,24 +15,23 @@ datasource db {
 // User Model
 // ============================================
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  avatar    String?
-  location  Json? // { city: string, country: string, coordinates: { lat: number, lng: number } }
-  
-  // User preferences
-  interests         String[] // Array of event categories
-  subscriptionTier  SubscriptionTier @default(FREE)
-  
+  id     String  @id @default(uuid())
+  email  String  @unique
+  name   String
+  avatar String?
+
+  // User subscription
+  subscriptionTier SubscriptionTier @default(FREE)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  createdEvents Event[]   @relation("EventCreator")
+  createdEvents Event[]          @relation("EventCreator")
   tickets       Ticket[]
-  
+  preferences   UserPreferences?
+
   @@index([email])
   @@map("users")
 }
@@ -46,18 +45,18 @@ enum SubscriptionTier {
 // Event Model
 // ============================================
 model Event {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   title       String
-  description String   @db.Text
-  
+  description String @db.Text
+
   // Creator
   creatorId String
   creator   User   @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  
+
   // Event details
-  categories  String[] // ['technology', 'business', etc.]
-  coverImage  Json // { url: string, alt: string, photographer?: string, source: 'unsplash' | 'upload' }
-  
+  categories String[] // ['technology', 'business', etc.]
+  coverImage Json // { url: string, alt: string, photographer?: string, source: 'unsplash' | 'upload' }
+
   // Location
   locationType String // 'physical' | 'virtual' | 'hybrid'
   address      String?
@@ -65,27 +64,27 @@ model Event {
   country      String
   coordinates  Json? // { lat: number, lng: number }
   virtualLink  String?
-  
+
   // Date & Time
   startTime DateTime
   endTime   DateTime
-  timezone  String @default("UTC")
-  
+  timezone  String   @default("UTC")
+
   // Capacity & Pricing
   capacity    Int?
   ticketPrice Float @default(0) // 0 means free event
-  
+
   // Status
   status EventStatus @default(DRAFT)
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   tickets   Ticket[]
   analytics EventAnalytics?
-  
+
   @@index([creatorId])
   @@index([city])
   @@index([status])
@@ -105,31 +104,31 @@ enum EventStatus {
 // ============================================
 model Ticket {
   id String @id @default(uuid())
-  
+
   // Event & User
   eventId String
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Ticket details
-  qrCode       String  @unique
-  ticketNumber String  @unique
+  qrCode       String       @unique
+  ticketNumber String       @unique
   status       TicketStatus @default(ACTIVE)
-  
+
   // Purchase info
   purchasePrice Float
   attendeeName  String
   attendeeEmail String
-  
+
   // Check-in
   checkedInAt DateTime?
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([eventId])
   @@index([userId])
   @@index([qrCode])
@@ -150,23 +149,47 @@ model EventAnalytics {
   id      String @id @default(uuid())
   eventId String @unique
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+
   // Metrics
-  views         Int @default(0)
-  registrations Int @default(0)
-  checkIns      Int @default(0)
-  revenue       Float @default(0)
+  views          Int   @default(0)
+  registrations  Int   @default(0)
+  checkIns       Int   @default(0)
+  revenue        Float @default(0)
   engagementRate Float @default(0)
-  
+
   // Demographics (JSON)
   demographics Json? // { ageGroups: {}, locations: {}, interests: {} }
-  
+
   // Time series data
   timeSeriesData Json? // Array of { timestamp, metric, value }
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("event_analytics")
+}
+
+// ============================================
+// User Preferences Model
+// ============================================
+model UserPreferences {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Preferences
+  interests String[] // Array of event categories user is interested in
+  location  Json? // { city: string, country: string, coordinates: { lat: number, lng: number } }
+
+  // Notification settings
+  notificationSettings Json? // { email: boolean, push: boolean, eventReminders: boolean }
+
+  // Privacy settings
+  privacySettings Json? // { profileVisibility: 'public' | 'private', showLocation: boolean }
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
 }

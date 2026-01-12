@@ -75,9 +75,9 @@ export async function generateEventFromPrompt(userPrompt: string): Promise<Gener
         const systemPrompt = `For: "${userPrompt}"
 
 Generate ONLY valid JSON (no markdown):
-{"title":"event name","description":"brief 1-2 sentence description (max 100 words)","categories":["cat1","cat2"],"suggestedLocation":{"city":"City","country":"Country","locationType":"physical"},"suggestedDate":"2024-12-15T10:00:00Z","estimatedDuration":4,"suggestedCapacity":100,"keywords":["kw1","kw2","kw3"]}
+{"title":"event name","description":"brief 1-2 sentence description (max 100 words)","categories":["cat1","cat2"],"suggestedLocation":{"city":"Hyderabad","country":"India","locationType":"physical"},"suggestedDate":"2024-12-15T10:00:00+05:30","estimatedDuration":4,"suggestedCapacity":100,"keywords":["kw1","kw2","kw3"]}
 
-Keep description concise. Return JSON only:`;
+Default to Hyderabad, Telangana, India unless specified. Use IST timezone (+05:30). Keep description concise. Return JSON only:`;
 
         // Generate content
         const result = await model.generateContent(systemPrompt);
@@ -144,8 +144,8 @@ Keep description concise. Return JSON only:`;
 
         if (!generatedEvent.suggestedLocation) {
             generatedEvent.suggestedLocation = {
-                city: 'San Francisco',
-                country: 'USA',
+                city: 'Hyderabad',
+                country: 'India',
                 locationType: 'physical'
             };
         }

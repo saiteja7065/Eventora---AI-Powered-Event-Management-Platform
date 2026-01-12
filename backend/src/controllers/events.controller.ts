@@ -94,11 +94,11 @@ export async function createEvent(req: Request, res: Response) {
                 virtualLink,
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
-                timezone: timezone || 'UTC',
+                timezone: timezone || 'Asia/Kolkata',
                 capacity: capacity ? parseInt(capacity) : null,
                 ticketPrice: ticketPrice ? parseFloat(ticketPrice) : 0,
                 creatorId: userId,
-                status: 'DRAFT'
+                status: 'PUBLISHED'
             }
         });
 
@@ -120,21 +120,98 @@ export async function createEvent(req: Request, res: Response) {
 
 /**
  * GET /api/events
- * Get all events with pagination and filtering
+ * Get all events with advanced filtering, search, and pagination
  */
 export async function getEvents(req: Request, res: Response) {
     try {
-        const { page = '1', limit = '10', status, city, category } = req.query;
+        const {
+            search,
+            categories,
+            city,
+            country,
+            startDate,
+            endDate,
+            minPrice,
+            maxPrice,
+            locationType,
+            sortBy = 'startTime',
+            sortOrder = 'asc',
+            page = '1',
+            limit = '6',
+            status = 'PUBLISHED' // Only show published events by default
+        } = req.query;
 
         const pageNum = parseInt(page as string);
         const limitNum = parseInt(limit as string);
         const skip = (pageNum - 1) * limitNum;
 
-        // Build filter
-        const where: any = {};
-        if (status) where.status = status;
-        if (city) where.city = city;
-        if (category) where.categories = { has: category };
+        // Build filter conditions
+        const where: any = {
+            status: status // Filter by status (PUBLISHED by default)
+        };
+
+        // Text search in title and description
+        if (search) {
+            where.OR = [
+                { title: { contains: search as string, mode: 'insensitive' } },
+                { description: { contains: search as string, mode: 'insensitive' } }
+            ];
+        }
+
+        // Category filter (multiple categories)
+        if (categories) {
+            const categoryArray = typeof categories === 'string'
+                ? categories.split(',')
+                : categories;
+            where.categories = {
+                hasSome: categoryArray
+            };
+        }
+
+        // Location filters
+        if (city) {
+            where.city = { contains: city as string, mode: 'insensitive' };
+        }
+        if (country) {
+            where.country = { contains: country as string, mode: 'insensitive' };
+        }
+
+        // Date range filter
+        if (startDate || endDate) {
+            where.startTime = {};
+            if (startDate) {
+                where.startTime.gte = new Date(startDate as string);
+            }
+            if (endDate) {
+                where.startTime.lte = new Date(endDate as string);
+            }
+        }
+
+        // Price range filter
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            where.ticketPrice = {};
+            if (minPrice !== undefined) {
+                where.ticketPrice.gte = parseFloat(minPrice as string);
+            }
+            if (maxPrice !== undefined) {
+                where.ticketPrice.lte = parseFloat(maxPrice as string);
+            }
+        }
+
+        // Location type filter
+        if (locationType) {
+            where.locationType = locationType;
+        }
+
+        // Build sort object
+        const orderBy: any = {};
+        if (sortBy === 'price') {
+            orderBy.ticketPrice = sortOrder;
+        } else if (sortBy === 'date') {
+            orderBy.startTime = sortOrder;
+        } else {
+            orderBy[sortBy as string] = sortOrder;
+        }
 
         // Get events and total count in parallel
         const [events, total] = await Promise.all([
@@ -142,14 +219,25 @@ export async function getEvents(req: Request, res: Response) {
                 where,
                 skip,
                 take: limitNum,
-                orderBy: { startTime: 'asc' },
-                include: {
+                orderBy,
+                select: {
+                    id: true,
+                    title: true,
+                    description: true,
+                    coverImage: true,
+                    categories: true,
+                    city: true,
+                    country: true,
+                    startTime: true,
+                    endTime: true,
+                    ticketPrice: true,
+                    capacity: true,
+                    locationType: true,
                     creator: {
                         select: {
                             id: true,
                             name: true,
-                            email: true,
-                            avatar: true
+                            email: true
                         }
                     }
                 }
@@ -157,14 +245,23 @@ export async function getEvents(req: Request, res: Response) {
             prisma.event.count({ where })
         ]);
 
-        res.json({
+        const totalPages = Math.ceil(total / limitNum);
+        const hasMore = pageNum < totalPages;
+
+        // Add cache headers for performance
+        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+
+        res.status(200).json({
             success: true,
-            data: events,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                pages: Math.ceil(total / limitNum)
+            data: {
+                events,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages,
+                    hasMore
+                }
             }
         });
 
