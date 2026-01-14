@@ -21,9 +21,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getEventById, registerForEvent, cancelRegistration, getRegistrationStatus } from '@/lib/api-client';
+import { getEventById, registerForEvent, cancelRegistration, getRegistrationStatus, getEventAttendees } from '@/lib/api-client';
 import type { Event } from '@/types/event';
 import { useAuth } from '@/lib/auth-context';
+import AttendeesModal from '@/components/AttendeesModal';
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -39,6 +40,11 @@ export default function EventDetailPage() {
     const [registrationStatus, setRegistrationStatus] = useState<any>(null);
     const [isRegistering, setIsRegistering] = useState(false);
     const [registrationMessage, setRegistrationMessage] = useState('');
+
+    // Attendees modal state
+    const [showAttendeesModal, setShowAttendeesModal] = useState(false);
+    const [attendees, setAttendees] = useState<any[]>([]);
+    const [loadingAttendees, setLoadingAttendees] = useState(false);
 
     useEffect(() => {
         async function fetchEvent() {
@@ -163,6 +169,22 @@ export default function EventDetailPage() {
 
         // Clear message after 3 seconds
         setTimeout(() => setRegistrationMessage(''), 3000);
+    };
+
+    // Handle viewing attendees (organizer only)
+    const handleViewAttendees = async () => {
+        setLoadingAttendees(true);
+        setShowAttendeesModal(true);
+
+        const response = await getEventAttendees(eventId);
+
+        if (response.success && response.data) {
+            setAttendees(response.data);
+        } else {
+            console.error('Failed to fetch attendees:', response.error);
+        }
+
+        setLoadingAttendees(false);
     };
 
     // Loading state
@@ -420,14 +442,25 @@ export default function EventDetailPage() {
 
                                     {/* Check if user is the organizer */}
                                     {user && event?.creator && user.id === event.creator.id ? (
-                                        <Button
-                                            variant="gradient"
-                                            size="lg"
-                                            className="w-full"
-                                            onClick={() => router.push(`/events/${eventId}/edit`)}
-                                        >
-                                            Edit Event
-                                        </Button>
+                                        <div className="space-y-3">
+                                            <Button
+                                                variant="gradient"
+                                                size="lg"
+                                                className="w-full"
+                                                onClick={() => router.push(`/events/${eventId}/edit`)}
+                                            >
+                                                Edit Event
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="lg"
+                                                className="w-full"
+                                                onClick={handleViewAttendees}
+                                            >
+                                                <Users className="w-4 h-4 mr-2" />
+                                                View Attendees ({registrationStatus?.confirmedCount || 0})
+                                            </Button>
+                                        </div>
                                     ) : registrationStatus?.isRegistered ? (
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-center gap-2 p-3 bg-green-500/20 text-green-400 rounded-lg">
@@ -491,6 +524,16 @@ export default function EventDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Attendees Modal */}
+            <AttendeesModal
+                isOpen={showAttendeesModal}
+                onClose={() => setShowAttendeesModal(false)}
+                eventId={eventId}
+                eventTitle={event?.title || ''}
+                attendees={attendees}
+                loading={loadingAttendees}
+            />
         </div>
     );
 }
