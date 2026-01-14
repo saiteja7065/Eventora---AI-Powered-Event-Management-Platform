@@ -401,3 +401,322 @@ export async function getEventById(id: string): Promise<{ success: boolean; data
         };
     }
 }
+
+/**
+ * Get events created by the authenticated user
+ */
+export async function getMyEvents(
+    status?: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const params = new URLSearchParams();
+        if (status && status !== 'all') {
+            params.append('status', status);
+        }
+
+        const response = await fetch(
+            `${API_URL}/api/events/my-events?${params}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            }
+        );
+
+        const data = await response.json();
+        return data;
+    } catch (error: any) {
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch your events'
+        };
+    }
+}
+
+/**
+ * Update an existing event
+ */
+export async function updateEvent(
+    id: string,
+    eventData: Partial<CreateEventRequest>
+): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(eventData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update event');
+        }
+
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to update event'
+        };
+    }
+}
+
+/**
+ * Delete an event
+ */
+export async function deleteEvent(
+    id: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete event');
+        }
+
+        return {
+            success: true,
+            message: data.message || 'Event deleted successfully'
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to delete event'
+        };
+    }
+}
+
+/**
+ * Register for an event (RSVP)
+ */
+export async function registerForEvent(
+    eventId: string
+): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/${eventId}/register`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to register for event');
+        }
+
+        return {
+            success: true,
+            data: data.data,
+            message: data.message
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to register for event'
+        };
+    }
+}
+
+/**
+ * Cancel event registration
+ */
+export async function cancelRegistration(
+    eventId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/${eventId}/register`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to cancel registration');
+        }
+
+        return {
+            success: true,
+            message: data.message
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to cancel registration'
+        };
+    }
+}
+
+/**
+ * Get event attendees (organizer only)
+ */
+export async function getEventAttendees(
+    eventId: string
+): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/${eventId}/attendees`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch attendees');
+        }
+
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch attendees'
+        };
+    }
+}
+
+/**
+ * Get user's registered events
+ */
+export async function getMyRegistrations(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            return {
+                success: false,
+                error: 'Authentication required'
+            };
+        }
+
+        const response = await fetch(`${API_URL}/api/events/my-registrations`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch registrations');
+        }
+
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch registrations'
+        };
+    }
+}
+
+/**
+ * Get registration status for an event
+ */
+export async function getRegistrationStatus(
+    eventId: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        const token = await getAuthToken();
+
+        const response = await fetch(`${API_URL}/api/events/${eventId}/registration-status`, {
+            headers: token ? {
+                'Authorization': `Bearer ${token}`,
+            } : {},
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch registration status');
+        }
+
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch registration status'
+        };
+    }
+}

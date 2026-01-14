@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Wand2, Loader2, Image as ImageIcon, Calendar, MapPin, Users, DollarSign, AlertCircle, Edit3, Upload } from 'lucide-react';
+import { Sparkles, Wand2, Loader2, Image as ImageIcon, Calendar, MapPin, Users, DollarSign, AlertCircle, Edit3, Upload, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { generateEventFromPrompt, createEvent, uploadEventImage } from '@/lib/api-client';
+import Link from 'next/link';
 
 export default function CreateEventPage() {
     const { user } = useAuth();
@@ -265,6 +266,17 @@ export default function CreateEventPage() {
             <div className="mesh-background" />
 
             <div className="container mx-auto max-w-6xl relative z-10">
+                {/* Back Button */}
+                <div className="mb-6">
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex items-center text-text-secondary hover:text-primary transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Dashboard
+                    </Link>
+                </div>
+
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -276,7 +288,7 @@ export default function CreateEventPage() {
                         <span className="text-sm font-medium">AI-Powered Event Creation</span>
                     </div>
                     <h1 className="text-5xl md:text-6xl font-bold mb-4">
-                        <span className="gradient-text">Command Center</span>
+                        <span className="gradient-text">Create Your Event</span>
                     </h1>
                     <p className="text-xl text-text-secondary max-w-2xl mx-auto">
                         Describe your dream event and let AI handle the rest

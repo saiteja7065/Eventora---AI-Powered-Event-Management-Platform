@@ -14,21 +14,31 @@ import {
     Clock,
     Globe,
     Share2,
-    Loader2
+    Loader2,
+    CheckCircle,
+    UserPlus,
+    UserMinus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getEventById } from '@/lib/api-client';
+import { getEventById, registerForEvent, cancelRegistration, getRegistrationStatus } from '@/lib/api-client';
 import type { Event } from '@/types/event';
+import { useAuth } from '@/lib/auth-context';
 
 export default function EventDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useAuth();
     const eventId = params.id as string;
 
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Registration state
+    const [registrationStatus, setRegistrationStatus] = useState<any>(null);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [registrationMessage, setRegistrationMessage] = useState('');
 
     useEffect(() => {
         async function fetchEvent() {
@@ -48,8 +58,16 @@ export default function EventDetailPage() {
             }
         }
 
+        async function fetchRegistrationStatus() {
+            const response = await getRegistrationStatus(eventId);
+            if (response.success && response.data) {
+                setRegistrationStatus(response.data);
+            }
+        }
+
         if (eventId) {
             fetchEvent();
+            fetchRegistrationStatus();
         }
     }, [eventId]);
 
@@ -90,6 +108,61 @@ export default function EventDetailPage() {
             navigator.clipboard.writeText(window.location.href);
             alert('Link copied to clipboard!');
         }
+    };
+
+    const handleRegister = async () => {
+        if (!user) {
+            router.push('/auth/signin');
+            return;
+        }
+
+        setIsRegistering(true);
+        setRegistrationMessage('');
+
+        const response = await registerForEvent(eventId);
+
+        if (response.success) {
+            setRegistrationMessage(response.message || 'Successfully registered!');
+            // Refresh registration status
+            const statusResponse = await getRegistrationStatus(eventId);
+            if (statusResponse.success && statusResponse.data) {
+                setRegistrationStatus(statusResponse.data);
+            }
+        } else {
+            setRegistrationMessage(response.error || 'Failed to register');
+        }
+
+        setIsRegistering(false);
+
+        // Clear message after 3 seconds
+        setTimeout(() => setRegistrationMessage(''), 3000);
+    };
+
+    const handleCancelRegistration = async () => {
+        if (!confirm('Are you sure you want to cancel your registration?')) {
+            return;
+        }
+
+        setIsRegistering(true);
+        setRegistrationMessage('');
+
+        const response = await cancelRegistration(eventId);
+
+        if (response.success) {
+            setRegistrationMessage(response.message || 'Registration cancelled');
+            // Refresh registration status
+            const statusResponse = await getRegistrationStatus(eventId);
+            if (statusResponse.success && statusResponse.data) {
+                setRegistrationStatus(statusResponse.data);
+            }
+        } else {
+            setRegistrationMessage(response.error || 'Failed to cancel registration');
+        }
+
+        setIsRegistering(false);
+
+        // Clear message after 3 seconds
+        setTimeout(() => setRegistrationMessage(''), 3000);
     };
 
     // Loading state
@@ -310,14 +383,108 @@ export default function EventDetailPage() {
                                         </div>
                                     </div>
 
+                                    {/* Attendee Count & Registration Status */}
+                                    {registrationStatus && (
+                                        <>
+                                            <div className="border-t border-white/10 my-4" />
+                                            <div className="flex items-start gap-3">
+                                                <Users className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <p className="font-medium">Attendees</p>
+                                                    <p className="text-sm text-text-secondary">
+                                                        {registrationStatus.confirmedCount}
+                                                        {registrationStatus.capacity && ` / ${registrationStatus.capacity}`} registered
+                                                    </p>
+                                                    {registrationStatus.isFull && (
+                                                        <span className="inline-block mt-1 px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">
+                                                            Event Full
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
                                     {/* Register Button */}
                                     <div className="border-t border-white/10 my-4" />
-                                    <Button variant="gradient" size="lg" className="w-full" disabled>
-                                        Registration Coming Soon
-                                    </Button>
-                                    <p className="text-xs text-center text-text-muted">
-                                        RSVP feature will be available soon
-                                    </p>
+
+                                    {/* Show message if any */}
+                                    {registrationMessage && (
+                                        <div className={`p-3 rounded-lg mb-3 text-sm ${registrationMessage.includes('Success') || registrationMessage.includes('cancelled')
+                                            ? 'bg-green-500/20 text-green-400'
+                                            : 'bg-red-500/20 text-red-400'
+                                            }`}>
+                                            {registrationMessage}
+                                        </div>
+                                    )}
+
+                                    {/* Check if user is the organizer */}
+                                    {user && event?.creator && user.id === event.creator.id ? (
+                                        <Button
+                                            variant="gradient"
+                                            size="lg"
+                                            className="w-full"
+                                            onClick={() => router.push(`/events/${eventId}/edit`)}
+                                        >
+                                            Edit Event
+                                        </Button>
+                                    ) : registrationStatus?.isRegistered ? (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-center gap-2 p-3 bg-green-500/20 text-green-400 rounded-lg">
+                                                <CheckCircle className="w-5 h-5" />
+                                                <span className="font-medium">You're Registered!</span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="lg"
+                                                className="w-full text-red-400 hover:text-red-300"
+                                                onClick={handleCancelRegistration}
+                                                disabled={isRegistering}
+                                            >
+                                                {isRegistering ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                        Cancelling...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <UserMinus className="w-5 h-5 mr-2" />
+                                                        Cancel Registration
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    ) : registrationStatus?.isFull ? (
+                                        <Button variant="gradient" size="lg" className="w-full" disabled>
+                                            Event Full
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="gradient"
+                                            size="lg"
+                                            className="w-full"
+                                            onClick={handleRegister}
+                                            disabled={isRegistering}
+                                        >
+                                            {isRegistering ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                    Registering...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserPlus className="w-5 h-5 mr-2" />
+                                                    Register for Free
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+
+                                    {!user && (
+                                        <p className="text-xs text-center text-text-muted mt-2">
+                                            Sign in to register for this event
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

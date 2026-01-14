@@ -57,3 +57,29 @@ export interface EventCardData {
     capacity?: number;
     locationType: 'physical' | 'virtual' | 'hybrid';
 }
+
+export interface MyEvent {
+    id: string;
+    title: string;
+    description: string;
+    coverImage: {
+        url: string;
+        alt: string;
+    };
+    categories: string[];
+    city: string;
+    country: string;
+    startTime: string | Date;
+    endTime: string | Date;
+    status: string;
+    ticketPrice: number;
+    capacity?: number;
+    locationType: string;
+    createdAt: string | Date;
+    stats: {
+        views: number;
+        rsvps: number;
+        isUpcoming: boolean;
+        isPast: boolean;
+    };
+}

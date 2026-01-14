@@ -137,7 +137,7 @@ export async function getEvents(req: Request, res: Response) {
             sortBy = 'startTime',
             sortOrder = 'asc',
             page = '1',
-            limit = '6',
+            limit = '12',  // Increased default from 6
             status = 'PUBLISHED' // Only show published events by default
         } = req.query;
 
@@ -412,6 +412,85 @@ export async function deleteEvent(req: Request, res: Response) {
         res.status(500).json({
             success: false,
             error: 'Failed to delete event'
+        });
+    }
+}
+
+/**
+ * GET /api/events/my-events
+ * Get events created by the authenticated user
+ */
+export async function getMyEvents(req: Request, res: Response) {
+    try {
+        const userId = (req as any).user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required'
+            });
+        }
+
+        const {
+            status,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+
+        // Build where clause
+        const where: any = {
+            creatorId: userId
+        };
+
+        if (status && status !== 'all') {
+            where.status = status;
+        }
+
+        // Fetch user's events
+        const events = await prisma.event.findMany({
+            where,
+            orderBy: { [sortBy as string]: sortOrder },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                coverImage: true,
+                categories: true,
+                city: true,
+                country: true,
+                startTime: true,
+                endTime: true,
+                status: true,
+                ticketPrice: true,
+                capacity: true,
+                locationType: true,
+                createdAt: true
+            }
+        });
+
+        // Calculate statistics for each event
+        const eventsWithStats = events.map(event => ({
+            ...event,
+            stats: {
+                views: 0, // Placeholder for future analytics implementation
+                rsvps: 0, // Placeholder for future ticketing implementation
+                isUpcoming: new Date(event.startTime) > new Date(),
+                isPast: new Date(event.endTime) < new Date()
+            }
+        }));
+
+        console.log(`✅ Fetched ${events.length} events for user ${userId}`);
+
+        res.status(200).json({
+            success: true,
+            data: eventsWithStats
+        });
+
+    } catch (error: any) {
+        console.error('❌ Error fetching user events:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch your events'
         });
     }
 }

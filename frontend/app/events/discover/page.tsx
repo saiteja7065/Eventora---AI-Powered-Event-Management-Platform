@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Filter, X, ChevronLeft, ChevronRight, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import EventCard from '@/components/EventCard';
 import { getEvents, GetEventsParams } from '@/lib/api-client';
+import Link from 'next/link';
 
 const CATEGORIES = [
     { id: 'technology', label: 'Technology' },
@@ -64,7 +65,7 @@ export default function DiscoverPage() {
 
         const params: GetEventsParams = {
             page,
-            limit: 6,
+            limit: 12,  // Increased from 6 for better performance
             search: searchDebounce || undefined,
             categories: selectedCategories.length > 0 ? selectedCategories : undefined,
             city: city || undefined,
@@ -123,6 +124,17 @@ export default function DiscoverPage() {
             <div className="mesh-background" />
 
             <div className="container mx-auto max-w-7xl relative z-10">
+                {/* Back Button */}
+                <div className="mb-6">
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex items-center text-text-secondary hover:text-primary transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Dashboard
+                    </Link>
+                </div>
+
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

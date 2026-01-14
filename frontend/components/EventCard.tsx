@@ -16,7 +16,7 @@ interface EventCardProps {
         categories: string[];
         city: string;
         country: string;
-        startTime: string;
+        startTime: string | Date;
         ticketPrice: number;
         capacity?: number;
         locationType: string;

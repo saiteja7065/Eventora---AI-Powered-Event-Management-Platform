@@ -30,6 +30,7 @@ model User {
   // Relations
   createdEvents Event[]          @relation("EventCreator")
   tickets       Ticket[]
+  registrations Registration[]
   preferences   UserPreferences?
 
   @@index([email])
@@ -82,8 +83,9 @@ model Event {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tickets   Ticket[]
-  analytics EventAnalytics?
+  tickets       Ticket[]
+  registrations Registration[]
+  analytics     EventAnalytics?
 
   @@index([creatorId])
   @@index([city])
@@ -97,6 +99,37 @@ enum EventStatus {
   PUBLISHED
   CANCELLED
   COMPLETED
+}
+
+// ============================================
+// Registration Model (RSVP System)
+// ============================================
+model Registration {
+  id           String   @id @default(uuid())
+  eventId      String
+  userId       String
+  status       RegistrationStatus @default(CONFIRMED)
+  registeredAt DateTime @default(now())
+  
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId]) // Prevent duplicate registrations
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@map("registrations")
+}
+
+enum RegistrationStatus {
+  CONFIRMED
+  CANCELLED
+  WAITLIST
 }
 
 // ============================================
